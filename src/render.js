@@ -52,6 +52,8 @@ export function render(game) {
   drawTexts(ctx, game);
   ctx.restore();
 
+  drawAmbient(ctx, game, w, h);
+
   // iluminación: viñeta oscura alrededor del jugador (más cerrada con niebla)
   const fog = game.event && game.event.id === 'niebla';
   const dark = fog ? 0.96 : (game.map.def.darkness ?? 0.5);
@@ -78,6 +80,12 @@ export function render(game) {
   if (game.flashT > 0) {
     ctx.globalAlpha = Math.min(1, game.flashT / game.flashDur) * 0.55;
     ctx.fillStyle = game.flashColor;
+    ctx.fillRect(0, 0, w, h);
+    ctx.globalAlpha = 1;
+  }
+  if (game.introT > 0) {
+    ctx.globalAlpha = Math.min(1, game.introT / 0.7);
+    ctx.fillStyle = '#05060c';
     ctx.fillRect(0, 0, w, h);
     ctx.globalAlpha = 1;
   }
@@ -124,33 +132,102 @@ function drawIndicators(ctx, game, w, h) {
   ctx.textBaseline = 'alphabetic';
 }
 
+// ─── Partículas de ambiente (luciérnagas en la pradera, polvo y brasas en la cripta) ───
+// Se calculan a partir del tiempo y la cámara: no guardan estado ni se actualizan.
+function drawAmbient(ctx, game, w, h) {
+  const t = game.time, cam = game.cam;
+  const grass = game.map.def.decorStyle === 'grass';
+  const n = grass ? 26 : 34;
+  const W = w + 120, H = h + 120;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < n; i++) {
+    const s1 = ((i * 7919) % 1000) / 1000, s2 = ((i * 6131) % 1000) / 1000, s3 = ((i * 3571) % 1000) / 1000;
+    const depth = 0.55 + s3 * 0.6; // paralaje: las más "cercanas" se mueven más con la cámara
+    let x = s1 * W - cam.x * depth + Math.sin(t * (0.25 + s2 * 0.4) + i) * 26;
+    let y = s2 * H - cam.y * depth + (grass ? Math.cos(t * (0.2 + s1 * 0.3) + i * 2) * 22 : -t * (8 + s3 * 16));
+    x = ((x % W) + W) % W - 60; y = ((y % H) + H) % H - 60;
+    if (grass) {
+      const blink = Math.max(0, Math.sin(t * (0.7 + s3) + i * 1.7));
+      if (blink < 0.05) continue;
+      drawGlow(ctx, x, y, 7 + s3 * 5, '#d4ff7a', 0.5 * blink);
+      ctx.globalAlpha = blink * 0.9; ctx.fillStyle = '#f4ffc9';
+      ctx.fillRect(x - 1, y - 1, 2, 2);
+    } else {
+      const ember = i % 5 === 0;
+      const a = 0.25 + Math.sin(t * (0.5 + s1) + i) * 0.15;
+      drawGlow(ctx, x, y, ember ? 8 : 5 + s3 * 4, ember ? '#ffb74d' : '#b9a9e8', ember ? a + 0.2 : a);
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
 // ─── Fondo animado del menú ───
 const MENU_ORBS = [];
-for (let i = 0; i < 34; i++) {
+for (let i = 0; i < 30; i++) {
   const el = ELEMENT_LIST[i % ELEMENT_LIST.length];
-  MENU_ORBS.push({ x: Math.random(), y: Math.random(), r: 6 + Math.random() * 26, color: el.color, sp: 0.01 + Math.random() * 0.03, ph: Math.random() * 6 });
+  MENU_ORBS.push({ x: Math.random(), y: Math.random(), r: 6 + Math.random() * 22, color: el.color, sp: 0.01 + Math.random() * 0.03, ph: Math.random() * 6 });
 }
+const MENU_NEBULAS = [
+  { x: 0.18, y: 0.3, r: 0.55, color: '#ff6b35', a: 0.16, sp: 0.07, ph: 0 },
+  { x: 0.82, y: 0.28, r: 0.6, color: '#4fc3f7', a: 0.15, sp: 0.05, ph: 2 },
+  { x: 0.5, y: 0.92, r: 0.7, color: '#9575cd', a: 0.2, sp: 0.04, ph: 4 },
+  { x: 0.72, y: 0.75, r: 0.4, color: '#81c784', a: 0.1, sp: 0.09, ph: 1 },
+];
 function drawMenuBackground(ctx, w, h, t) {
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#0b0e17'); g.addColorStop(1, '#120c1e');
+  g.addColorStop(0, '#080a14'); g.addColorStop(0.6, '#0e0b1c'); g.addColorStop(1, '#170d22');
   ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-  // estrellas
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 90; i++) {
-    const x = ((i * 977) % 1000) / 1000 * w, y = ((i * 613) % 1000) / 1000 * h;
-    ctx.globalAlpha = 0.25 + Math.sin(t * 1.5 + i) * 0.2;
-    ctx.fillRect(x, y, 1.5, 1.5);
-  }
   ctx.globalCompositeOperation = 'lighter';
+  // nebulosas de colores que derivan despacio
+  const m = Math.max(w, h);
+  for (const nb of MENU_NEBULAS) {
+    const x = (nb.x + Math.sin(t * nb.sp + nb.ph) * 0.06) * w, y = (nb.y + Math.cos(t * nb.sp * 0.8 + nb.ph) * 0.05) * h;
+    drawGlow(ctx, x, y, nb.r * m * (1 + Math.sin(t * nb.sp * 2 + nb.ph) * 0.06), nb.color, nb.a);
+  }
+  // estrellas en dos capas con parpadeo
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 130; i++) {
+    const far = i % 3 !== 0;
+    const x = (((i * 977) % 1000) / 1000 * w + t * (far ? 2 : 5)) % w, y = ((i * 613) % 1000) / 1000 * h;
+    ctx.globalAlpha = (far ? 0.18 : 0.4) + Math.sin(t * (far ? 1.2 : 2.2) + i) * (far ? 0.12 : 0.3);
+    const s = far ? 1.2 : 2;
+    ctx.fillRect(x, y, s, s);
+  }
+  // estrella fugaz cada pocos segundos
+  const cyc = t % 7;
+  if (cyc < 0.9) {
+    const k = cyc / 0.9, seed = Math.floor(t / 7);
+    const sx = (((seed * 733) % 100) / 100 * 0.7 + 0.15) * w, sy = (((seed * 419) % 100) / 100 * 0.35 + 0.05) * h;
+    const x = sx + k * w * 0.32, y = sy + k * h * 0.2;
+    const lg = ctx.createLinearGradient(x, y, x - w * 0.11, y - h * 0.07);
+    lg.addColorStop(0, `rgba(255,255,255,${0.9 * Math.sin(k * Math.PI)})`); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.globalAlpha = 1; ctx.strokeStyle = lg; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - w * 0.11, y - h * 0.07); ctx.stroke();
+    drawGlow(ctx, x, y, 14, '#ffffff', 0.7 * Math.sin(k * Math.PI));
+  }
+  // orbes elementales que suben, con estela
   for (const o of MENU_ORBS) {
     const x = ((o.x + Math.sin(t * o.sp * 8 + o.ph) * 0.03) % 1) * w;
     const y = ((o.y - t * o.sp * 0.5 + 10) % 1) * h;
-    drawGlow(ctx, x, y, o.r * 2.2, o.color, 0.22);
-    ctx.globalAlpha = 0.9; ctx.fillStyle = o.color;
-    ctx.beginPath(); ctx.arc(x, y, o.r * 0.35, 0, Math.PI * 2); ctx.fill();
+    const pulse = 1 + Math.sin(t * 2 + o.ph) * 0.12;
+    drawGlow(ctx, x, y, o.r * 2.4 * pulse, o.color, 0.24);
+    ctx.fillStyle = o.color;
+    for (let k = 1; k <= 4; k++) {
+      ctx.globalAlpha = 0.3 - k * 0.06;
+      ctx.beginPath(); ctx.arc(x - Math.cos(t * o.sp * 8 + o.ph) * k * 2, y + k * o.r * 0.42, o.r * 0.3 * (1 - k * 0.16), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath(); ctx.arc(x, y, o.r * 0.35 * pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.8; ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x - o.r * 0.1, y - o.r * 0.1, o.r * 0.12, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
+  // viñeta para concentrar la vista en el centro
+  const vg = ctx.createRadialGradient(w / 2, h / 2, h * 0.3, w / 2, h / 2, m * 0.75);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,6,0.6)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, w, h);
 }
 
 function drawShadows(ctx, game, vis) {
@@ -344,7 +421,8 @@ function drawEnemies(ctx, game, vis) {
       ASSETS.draw(ctx, asset, fr, e.size * 2.4 * asset.scale);
       if (e.flash > 0) { ctx.globalAlpha = 0.85; ASSETS.draw(ctx, asset, fr, e.size * 2.4 * asset.scale, true); }
     } else {
-      ctx.scale(scale * (0.5 + spawnK * 0.5), scale * (0.5 + spawnK * 0.5));
+      const pop = e.flash > 0 ? 1 + e.flash * 1.8 : 1; // el enemigo "salta" un instante al recibir un golpe
+      ctx.scale(scale * (0.5 + spawnK * 0.5) * pop, scale * (0.5 + spawnK * 0.5) * pop);
       ctx.drawImage(sp.canvas, -sp.pad, -sp.pad);
       if (e.flash > 0) {
         const fs = getEnemySprite(e, true);
@@ -420,6 +498,22 @@ function drawPlayer(ctx, game) {
     return;
   }
   const blink = p.invuln > 0 && Math.floor(game.time * 30) % 2 === 0;
+  // estelas del dash y del paso sombrío
+  if (p.ghosts && p.ghosts.length) {
+    const dir = p.facing.x < 0 ? -1 : 1;
+    for (const gh of p.ghosts) {
+      const age = game.time - gh.at;
+      if (age < 0 || age > 0.3) continue;
+      ctx.globalAlpha = (1 - age / 0.3) * 0.42;
+      drawSilhouette(ctx, p.cls.look, gh.x, gh.y, 1, p.walk, false, dir, false);
+    }
+    ctx.globalAlpha = 1;
+    if (game.time - p.ghosts[0].at > 0.3) p.ghosts.shift();
+  }
+  // anillo del color de la clase bajo los pies
+  const ringK = 0.5 + Math.sin(game.time * 3) * 0.5;
+  ctx.strokeStyle = p.cls.look.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.28 + ringK * 0.2;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 20, 19 + ringK * 3, 6.5 + ringK, 0, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 0.05; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(p.x, p.y, p.stats.pickupRadius, 0, Math.PI * 2); ctx.stroke();
   ctx.globalAlpha = 1;

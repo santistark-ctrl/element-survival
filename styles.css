@@ -13,8 +13,9 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; user-select: none; }
 #game { position: relative; width: 100vw; height: 100vh; }
-canvas { display: block; width: 100%; height: 100%; background: var(--bg); }
-canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
+#canvas { display: block; width: 100%; height: 100%; background: var(--bg); transition: filter 0.9s ease; }
+#canvas.dying { filter: grayscale(0.85) brightness(0.75) contrast(1.05); }
+#canvas.pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* ─── Controles táctiles ─── */
 #touch-layer { position: absolute; inset: 0; z-index: 5; touch-action: none; }
@@ -109,7 +110,7 @@ select { background: #161b22; color: var(--text); border: 1px solid var(--panel-
 .class-card { --c: #888; background: linear-gradient(180deg, #131722, #0e111a); border: 2px solid #2b3240; border-radius: 14px; padding: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s; }
 .class-card:hover { transform: translateY(-3px); border-color: var(--c); }
 .class-card.selected { border-color: var(--c); box-shadow: 0 0 22px color-mix(in srgb, var(--c) 70%, transparent); background: linear-gradient(180deg, #1a2030, #10131c); }
-.class-card canvas { background: radial-gradient(circle at 50% 70%, color-mix(in srgb, var(--c) 18%, transparent), transparent 70%); border-radius: 10px; }
+.class-card canvas { width: 96px; height: 116px; flex: none; background: radial-gradient(circle at 50% 70%, color-mix(in srgb, var(--c) 18%, transparent), transparent 70%); border-radius: 10px; }
 .class-name { font-weight: 900; font-size: 15px; }
 .class-el { font-size: 12px; color: var(--c); font-weight: 700; }
 .class-desc { font-size: 12px; color: var(--muted); }
@@ -182,3 +183,29 @@ select { background: #161b22; color: var(--text); border: 1px solid var(--panel-
 .syn-part { border: 1px solid var(--c); color: var(--c); border-radius: 6px; padding: 2px 6px; font-weight: 700; opacity: 0.6; }
 .syn-part.ok { opacity: 1; background: color-mix(in srgb, var(--c) 18%, transparent); }
 .syn-plus { color: var(--muted); font-weight: 900; }
+
+/* ─── Pulido visual ─── */
+.bar .ghost { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: #fff; opacity: 0.55; transition: width 0.55s ease-out 0.18s; }
+.bar .fill { position: relative; }
+.bar.hp.low { animation: hpLow 0.7s ease-in-out infinite; }
+@keyframes hpLow { 0%, 100% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 0 0 rgba(255,23,68,0); } 50% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 0 16px rgba(255,23,68,0.9); } }
+.bar.xp.gain { animation: xpGain 0.7s ease-out; }
+@keyframes xpGain { 0% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 0 22px rgba(255,255,255,0.95); filter: brightness(2.2); } 100% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 0 0 rgba(255,255,255,0); filter: none; } }
+#timer.tick { animation: timerTick 0.5s ease-out; }
+@keyframes timerTick { 0% { transform: translateX(-50%) scale(1.25); color: #ffd180; } 100% { transform: translateX(-50%) scale(1); } }
+/* barras de cine cuando aparece un jefe */
+#cine { position: absolute; inset: 0; pointer-events: none; }
+.cine-bar { position: absolute; left: 0; right: 0; height: 0; background: #000; box-shadow: 0 0 40px rgba(183,28,28,0.55); animation: cineBar 2.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+.cine-bar.top { top: 0; } .cine-bar.bottom { bottom: 0; }
+@keyframes cineBar { 0% { height: 0; } 14% { height: 11vh; } 78% { height: 11vh; } 100% { height: 0; } }
+/* menú */
+.menu-panel { backdrop-filter: blur(6px); }
+.menu-panel .title { animation: shimmer 9s linear infinite, titleFloat 5s ease-in-out infinite; }
+@keyframes titleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+#btn-play, #btn-start { animation: breathe 2.6s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 16px rgba(245,158,11,0.35); } 50% { box-shadow: 0 0 30px rgba(245,158,11,0.75), 0 0 60px rgba(245,158,11,0.2); } }
+.menu-panel .row .btn { transition: background 0.15s, transform 0.12s, box-shadow 0.15s, border-color 0.15s; }
+.menu-panel .row .btn:hover { transform: translateY(-2px); border-color: #ffb74d; box-shadow: 0 6px 18px rgba(0,0,0,0.45), 0 0 14px rgba(255,183,77,0.25); }
+.class-card.selected canvas { animation: classGlow 2.2s ease-in-out infinite; }
+@keyframes classGlow { 0%, 100% { box-shadow: 0 0 0 color-mix(in srgb, var(--c) 0%, transparent); } 50% { box-shadow: 0 0 24px color-mix(in srgb, var(--c) 55%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .menu-panel .title, #btn-play, #btn-start, .bar.hp.low, .class-card.selected canvas { animation: none; } .cine-bar { animation-duration: 0.01s; } }

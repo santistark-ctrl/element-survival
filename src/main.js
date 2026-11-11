@@ -89,6 +89,8 @@ class Game {
     this.event = null; this.nextEventAt = 75; this.lastEventId = null;
     this.achievementTimer = 1;
     this.shake = 0; this.flashT = 0;
+    this.introT = 0.7; // fundido de entrada
+    this.canvas.classList.remove('dying');
     this.player = new Player(this, cls);
     const starters = starterPowersOfElement(cls.element);
     this.player.addPower(starters[Math.floor(Math.random() * starters.length)].id);
@@ -115,6 +117,7 @@ class Game {
     if (this.state === 'gameover' || this.state === 'dying' || !this.player) return;
     this.state = 'dying';
     this.dyingT = 0;
+    this.canvas.classList.add('dying');
     this.ui.hideOverlays();
     const p = this.player;
     this.particles.emit(p.x, p.y, 40, { colors: [p.cls.look.accent, '#fff', '#ff5252'], speed: 220, life: [0.5, 1.2], size: [2, 5], grav: 60, drag: 1.5, add: true });
@@ -176,6 +179,7 @@ class Game {
   toMenu() {
     this.state = 'menu';
     this.map = null;
+    this.canvas.classList.remove('dying');
     this.ui.showMenu();
     this.audio.startMusic('menu');
   }
@@ -410,6 +414,7 @@ class Game {
 
   update(dt) {
     this.time += dt;
+    if (this.introT > 0) this.introT -= dt;
     this.player.update(dt);
 
     this.grid.clear();

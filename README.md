@@ -115,6 +115,16 @@ Lo que hay hoy es todo procedural. Si ponés imágenes PNG en `assets/` y las re
 
 La guía paso a paso con costos está en `docs/PUBLICAR.md`.
 
+## Pulido visual (10/11/2026)
+
+- **Selección de clase**: los personajes se ven nítidos y las 6 clases entran en una pantalla (antes una regla CSS general estiraba los lienzos).
+- **Menú**: fondo con nebulosas, estrellas en dos capas, estrellas fugaces y orbes con estela (`drawMenuBackground` en `render.js`).
+- **Partida**: luciérnagas en la pradera y polvo con brasas en la cripta (`drawAmbient`), fundido al empezar, anillo del color de la clase bajo el personaje, estelas en el dash y el paso sombrío, los enemigos "saltan" al recibir un golpe y los proyectiles dejan una chispa al impactar.
+- **HUD**: la barra de vida deja una estela blanca al perder vida y late cuando queda poca, la de experiencia destella al subir de nivel y el reloj marca cada minuto. El HUD ya no reescribe el DOM en cada cuadro.
+- **Jefes**: barras de cine al aparecer. **Muerte**: la imagen se desatura.
+
+La revisión del código, con los problemas encontrados, está en `docs/REVISION.md`.
+
 ## Pendiente
 
 - Más mapas y más jefes.

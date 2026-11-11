@@ -45,7 +45,7 @@ export class UI {
     box.innerHTML = CLASS_LIST.map((c) => {
       const el = ELEMENTS[c.element];
       return `<div class="class-card" data-id="${c.id}" style="--c:${el.color}">
-        <canvas width="96" height="116"></canvas>
+        <canvas width="192" height="232"></canvas>
         <div class="class-name">${c.name}</div>
         <div class="class-el">${el.icon} ${el.name}</div>
         <div class="class-desc">${c.desc}</div>
@@ -135,7 +135,7 @@ export class UI {
       const cv = el.querySelector('canvas');
       const ctx = cv.getContext('2d');
       ctx.clearRect(0, 0, cv.width, cv.height);
-      drawSilhouette(ctx, c.look, cv.width / 2, 66, 1.9, this.previewT, el.dataset.id === this.selectedClass, 1, false);
+      drawSilhouette(ctx, c.look, cv.width / 2, 132, 3.8, this.previewT, el.dataset.id === this.selectedClass, 1, false);
     }
   }
 
@@ -286,19 +286,39 @@ export class UI {
     this.hideOverlays();
     this.$('hud').classList.remove('hidden');
     this.slotSignature = '';
+    if (this.hudEls) this.hudEls.last = {};
+    this.$('cine').classList.add('hidden');
+  }
+
+  // Barras de cine cuando aparece un jefe.
+  bossIntro() {
+    const c = this.$('cine');
+    c.classList.add('hidden');
+    void c.offsetWidth; // reinicia la animación
+    c.classList.remove('hidden');
+    clearTimeout(this.cineTimer);
+    this.cineTimer = setTimeout(() => c.classList.add('hidden'), 2900);
   }
 
   // ─── HUD ───
   updateHud(game) {
     const p = game.player;
-    const hp = this.$('hud').querySelector('.bar.hp');
-    hp.querySelector('.fill').style.width = `${(p.hp / p.stats.maxHp) * 100}%`;
-    hp.querySelector('.label').textContent = `${Math.ceil(p.hp)} / ${Math.round(p.stats.maxHp)}`;
-    const xp = this.$('hud').querySelector('.bar.xp');
-    xp.querySelector('.fill').style.width = `${(p.xp / p.xpNext) * 100}%`;
-    xp.querySelector('.label').textContent = `Nivel ${p.level} · ${Math.floor(p.xp)} / ${p.xpNext} XP`;
-    this.$('timer').textContent = fmtTime(game.time);
-    this.$('stats').innerHTML = `<span>☠️ ${p.kills}</span><span>🪙 ${p.gold}</span><span>👾 ${game.enemies.length}</span>${game.settings.showFps ? `<span>${game.fps} fps</span>` : ''}`;
+    // solo se toca el DOM cuando el valor cambió (antes se reescribía todo en cada cuadro)
+    const h = this.hudEls || (this.hudEls = (() => {
+      const hud = this.$('hud'), hp = hud.querySelector('.bar.hp'), xp = hud.querySelector('.bar.xp');
+      return { hp, hpFill: hp.querySelector('.fill'), hpGhost: hp.querySelector('.ghost'), hpLabel: hp.querySelector('.label'), xp, xpFill: xp.querySelector('.fill'), xpLabel: xp.querySelector('.label'), timer: this.$('timer'), stats: this.$('stats'), last: {} };
+    })());
+    const set = (key, value, apply) => { if (h.last[key] !== value) { h.last[key] = value; apply(value); } };
+    const hpPct = Math.max(0, Math.min(100, (p.hp / p.stats.maxHp) * 100));
+    set('hpW', hpPct.toFixed(1), (v) => { h.hpFill.style.width = `${v}%`; if (h.hpGhost) h.hpGhost.style.width = `${v}%`; });
+    set('hpT', `${Math.ceil(p.hp)} / ${Math.round(p.stats.maxHp)}`, (v) => { h.hpLabel.textContent = v; });
+    set('hpLow', hpPct < 25 && game.state !== 'dying', (v) => h.hp.classList.toggle('low', v));
+    set('xpW', ((p.xp / p.xpNext) * 100).toFixed(1), (v) => { h.xpFill.style.width = `${v}%`; });
+    set('xpT', `Nivel ${p.level} · ${Math.floor(p.xp)} / ${p.xpNext} XP`, (v) => { h.xpLabel.textContent = v; });
+    set('lvl', p.level, (v) => { if (v > 1) { h.xp.classList.remove('gain'); void h.xp.offsetWidth; h.xp.classList.add('gain'); } });
+    set('time', fmtTime(game.time), (v) => { h.timer.textContent = v; });
+    set('min', Math.floor(game.time / 60), (v) => { if (v > 0) { h.timer.classList.remove('tick'); void h.timer.offsetWidth; h.timer.classList.add('tick'); } });
+    set('stats', `<span>☠️ ${p.kills}</span><span>🪙 ${p.gold}</span><span>👾 ${game.enemies.length}</span>${game.settings.showFps ? `<span>${game.fps} fps</span>` : ''}`, (v) => { h.stats.innerHTML = v; });
 
     const sig = p.powers.map((x) => x.def.id + x.level).join() + '|' + p.items.map((x) => x.id + x.level).join() + '|' + p.evolved.map((x) => x.def.id).join() + '|' + [...p.elements].join();
     if (sig !== this.slotSignature) {
@@ -321,10 +341,12 @@ export class UI {
     const eb = this.$('event-badge');
     if (game.event) {
       const ev = game.event;
-      eb.classList.remove('hidden');
-      eb.style.setProperty('--c', ev.def.color);
-      eb.innerHTML = `<span class="ev-icon">${ev.def.icon}</span><span class="ev-name">${ev.id === 'oleada' ? `Oleada de ${ev.data.name}` : ev.def.name}</span><span class="ev-time">${Math.ceil(ev.dur - ev.t)}s</span>`;
-    } else eb.classList.add('hidden');
+      set('ev', `<span class="ev-icon">${ev.def.icon}</span><span class="ev-name">${ev.id === 'oleada' ? `Oleada de ${ev.data.name}` : ev.def.name}</span><span class="ev-time">${Math.ceil(ev.dur - ev.t)}s</span>`, (v) => {
+        eb.classList.remove('hidden');
+        eb.style.setProperty('--c', ev.def.color);
+        eb.innerHTML = v;
+      });
+    } else set('ev', '', () => eb.classList.add('hidden'));
     // habilidad activa
     const sk = this.$('skill-hud');
     if (p.skill) {

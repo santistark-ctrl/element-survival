@@ -42,6 +42,7 @@ export class Player {
     this.skill = cls.skill;
     this.skillCd = 0;
     this.dashT = 0; this.dashVx = 0; this.dashVy = 0;
+    this.ghosts = []; // estelas del dash (solo visual)
     this.stats = null;
     this.hp = 0;
     this.recomputeStats();
@@ -221,6 +222,7 @@ export class Player {
       }
       case 'paso_sombrio': {
         const ox = this.x, oy = this.y;
+        for (let i = 0; i < 5; i++) this.ghosts.push({ x: ox + this.facing.x * 46 * i, y: oy + this.facing.y * 46 * i, at: g.time - 0.05 * (4 - i) });
         g.particles.emitElement(ox, oy, 'oscuridad', 25, { speed: 120 });
         this.x += this.facing.x * 230; this.y += this.facing.y * 230;
         this.invuln = Math.max(this.invuln, 0.5);
@@ -242,6 +244,8 @@ export class Player {
     this.skillCd = Math.max(0, this.skillCd - dt);
     if (this.dashT > 0) {
       this.dashT -= dt;
+      this.ghosts.push({ x: this.x, y: this.y, at: this.game.time });
+      if (this.ghosts.length > 8) this.ghosts.shift();
       this.x += this.dashVx * dt; this.y += this.dashVy * dt;
       this.moving = true; this.walk += dt * 12;
       this.game.particles.emit(this.x, this.y, 2, { colors: ['#ffffff', this.cls.look.accent], speed: 40, life: [0.2, 0.4], size: [2, 4], add: true });

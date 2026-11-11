@@ -193,6 +193,16 @@ export class Projectile {
       this.hit.add(e.id);
       const l = Math.hypot(this.vx, this.vy) || 1;
       hitEnemy(g, e, this.power, this.damage, this.vx / l, this.vy / l, this.kb);
+      if (g.effects.length < 180) {
+        // chispa de impacto (solo visual)
+        const ix = this.x, iy = this.y, col = this.light, sz = this.size, rot = this.spin;
+        g.addEffect({ dur: 0.16, additive: true, draw(ctx, k) {
+          ctx.globalAlpha = 1 - k; ctx.strokeStyle = col; ctx.lineWidth = 2.5 * (1 - k) + 0.5; ctx.lineCap = 'round';
+          ctx.beginPath();
+          for (let i = 0; i < 4; i++) { const a = rot + i * 1.5708, c = Math.cos(a), s = Math.sin(a); ctx.moveTo(ix + c * sz * (0.8 + k * 1.6), iy + s * sz * (0.8 + k * 1.6)); ctx.lineTo(ix + c * sz * (1.8 + k * 3.4), iy + s * sz * (1.8 + k * 3.4)); }
+          ctx.stroke(); ctx.globalAlpha = 1;
+        } });
+      }
       if (flags.explode && (!this.isSplit || g.player.stats.flags.splitExplode)) {
         const br = 55 * g.player.stats.areaMult;
         g.grid.query(this.x, this.y, br + 40, (o) => {

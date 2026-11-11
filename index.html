@@ -20,8 +20,10 @@
 
     <!-- HUD en partida -->
     <div id="hud" class="hidden">
+      <!-- barras de cine al aparecer un jefe: van primero para quedar detrás del resto del HUD -->
+      <div id="cine" class="hidden"><div class="cine-bar top"></div><div class="cine-bar bottom"></div></div>
       <div class="hud-top">
-        <div class="bar hp"><div class="fill"></div><span class="label"></span></div>
+        <div class="bar hp"><div class="ghost"></div><div class="fill"></div><span class="label"></span></div>
         <div class="bar xp"><div class="fill"></div><span class="label"></span></div>
       </div>
       <div id="timer">00:00</div>

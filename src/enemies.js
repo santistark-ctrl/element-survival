@@ -233,6 +233,7 @@ function spawnBoss(game, type, final = false) {
     game.flash('#3a0010', 0.5);
   }
   game.shakeScreen(10);
+  game.ui.bossIntro();
   game.audio.play('boss');
 }
 
