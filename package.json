@@ -1,0 +1,27 @@
+{
+  "name": "element-survival",
+  "version": "0.3.0",
+  "description": "Survival estilo Magic Survival con elementos, sinergias, cofres y jefes.",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "node server.js",
+    "desktop": "electron .",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.santi.elementsurvival",
+    "productName": "Element Survival",
+    "directories": { "output": "dist" },
+    "files": ["index.html", "styles.css", "src/**", "assets/**", "server.js", "desktop/**", "package.json"],
+    "win": { "target": ["nsis", "portable"] },
+    "linux": { "target": ["AppImage"] },
+    "mac": { "target": ["dmg"] }
+  }
+}

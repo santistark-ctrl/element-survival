@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Element Survival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game">
+    <canvas id="canvas"></canvas>
+
+    <!-- Controles táctiles (solo en pantallas táctiles) -->
+    <div id="touch-layer" class="hidden">
+      <div id="joy-base" class="hidden"><div id="joy-knob"></div></div>
+    </div>
+    <button id="touch-pause" class="hidden">II</button>
+
+    <!-- HUD en partida -->
+    <div id="hud" class="hidden">
+      <div class="hud-top">
+        <div class="bar hp"><div class="fill"></div><span class="label"></span></div>
+        <div class="bar xp"><div class="fill"></div><span class="label"></span></div>
+      </div>
+      <div id="timer">00:00</div>
+      <div id="stats"></div>
+      <div id="slots">
+        <div id="element-slots" class="slot-row"></div>
+        <div id="power-slots" class="slot-row"></div>
+        <div id="item-slots" class="slot-row"></div>
+        <div id="synergy-slots" class="slot-row"></div>
+      </div>
+      <div id="boss-bar" class="hidden">
+        <span class="name"></span>
+        <div class="track"><div class="fill"></div></div>
+      </div>
+      <div id="announce"></div>
+      <div id="event-badge" class="hidden"></div>
+      <div id="skill-hud" class="hidden"><div class="sk-ring"><span class="sk-icon"></span></div><span class="sk-name"></span><span class="sk-key">Espacio</span></div>
+    </div>
+    <button id="touch-skill" class="hidden">✨</button>
+
+    <!-- Menú principal -->
+    <div id="menu" class="overlay transparent">
+      <div class="panel menu-panel">
+        <h1 class="title" id="game-title">Element Survival</h1>
+        <p class="subtitle">Sobreviví a las hordas dominando los elementos</p>
+        <div id="menu-meta" class="meta"></div>
+        <button id="btn-play" class="btn primary big">Jugar</button>
+        <div class="row">
+          <button id="btn-compendium" class="btn">Compendio</button>
+          <button id="btn-options" class="btn">Opciones</button>
+        </div>
+        <div class="row">
+          <button id="btn-upgrades" class="btn">⭐ Mejoras permanentes</button>
+          <button id="btn-achievements" class="btn">🏆 Logros y estadísticas</button>
+        </div>
+        <p class="hint">WASD / flechas para moverte · Espacio habilidad · ESC pausa · los ataques son automáticos</p>
+      </div>
+    </div>
+
+    <!-- Logros y estadísticas -->
+    <div id="achievements" class="overlay hidden">
+      <div class="panel wide tall">
+        <h2>Logros y estadísticas</h2>
+        <p id="ach-sub" class="subtitle"></p>
+        <div id="ach-tabs" class="tabs">
+          <button class="tab active" data-tab="logros">Logros</button>
+          <button class="tab" data-tab="estadisticas">Estadísticas</button>
+        </div>
+        <div id="ach-body" class="ach-body"></div>
+        <button id="btn-achievements-back" class="btn primary">Volver</button>
+      </div>
+    </div>
+
+    <!-- Mejoras permanentes -->
+    <div id="upgrades" class="overlay hidden">
+      <div class="panel wide tall">
+        <h2>Mejoras permanentes</h2>
+        <p id="upgrades-gold" class="subtitle"></p>
+        <div id="upgrades-list" class="up-list"></div>
+        <button id="btn-upgrades-back" class="btn primary">Volver</button>
+      </div>
+    </div>
+
+    <!-- Selección de clase -->
+    <div id="classselect" class="overlay hidden">
+      <div class="panel wide">
+        <h2>Elegí tu clase</h2>
+        <p class="subtitle">Cada clase empieza con su elemento desbloqueado y potencia toda su rama</p>
+        <div id="class-cards" class="class-grid"></div>
+        <div class="field">
+          <label for="map-select">Mapa</label>
+          <select id="map-select"></select>
+        </div>
+        <div class="row">
+          <button id="btn-class-back" class="btn">Volver</button>
+          <button id="btn-start" class="btn primary big">Comenzar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opciones -->
+    <div id="options" class="overlay hidden">
+      <div class="panel">
+        <h2>Opciones</h2>
+        <div class="opt-row"><label for="opt-master">Volumen general</label><input id="opt-master" type="range" min="0" max="1" step="0.05" /><span id="opt-master-val"></span></div>
+        <div class="opt-row"><label for="opt-music">Música</label><input id="opt-music" type="range" min="0" max="1" step="0.05" /><span id="opt-music-val"></span></div>
+        <div class="opt-row"><label for="opt-sfx">Efectos</label><input id="opt-sfx" type="range" min="0" max="1" step="0.05" /><span id="opt-sfx-val"></span></div>
+        <div class="opt-row"><label for="opt-dmg">Números de daño</label><input id="opt-dmg" type="checkbox" /><span></span></div>
+        <div class="opt-row"><label for="opt-shake">Vibración de pantalla</label><input id="opt-shake" type="checkbox" /><span></span></div>
+        <div class="opt-row"><label for="opt-fps">Mostrar FPS</label><input id="opt-fps" type="checkbox" /><span></span></div>
+        <div class="opt-row"><label for="opt-pixel">Modo píxel (retro)</label><input id="opt-pixel" type="checkbox" /><span></span></div>
+        <div class="row">
+          <button id="btn-test-sound" class="btn">Probar sonido</button>
+          <button id="btn-options-back" class="btn primary">Volver</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compendio -->
+    <div id="compendium" class="overlay hidden">
+      <div class="panel wide tall">
+        <h2>Compendio</h2>
+        <div id="compendium-tabs" class="tabs">
+          <button class="tab active" data-tab="elementos">Elementos</button>
+          <button class="tab" data-tab="magias">Magias</button>
+          <button class="tab" data-tab="sinergias">Sinergias</button>
+          <button class="tab" data-tab="evoluciones">Evoluciones</button>
+          <button class="tab" data-tab="objetos">Ítems</button>
+        </div>
+        <div id="compendium-body" class="comp-grid"></div>
+        <button id="btn-compendium-back" class="btn primary">Volver</button>
+      </div>
+    </div>
+
+    <!-- Subida de nivel -->
+    <div id="levelup" class="overlay hidden">
+      <div class="panel wide">
+        <h2 id="levelup-title" class="glow-title">¡Nivel 2!</h2>
+        <p class="subtitle">Elegí una mejora</p>
+        <div id="levelup-cards" class="cards"></div>
+        <div class="row">
+          <button id="btn-reroll" class="btn">Reroll</button>
+          <button id="btn-skip" class="btn">Saltar</button>
+          <button id="btn-levelup-compendium" class="btn ghost">📖 Compendio</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cofre -->
+    <div id="chest" class="overlay hidden">
+      <div class="panel wide chest-panel">
+        <h2 id="chest-title">Cofre</h2>
+        <p id="chest-sub" class="subtitle"></p>
+        <div id="chest-rewards" class="cards"></div>
+        <p class="hint">1 a 4 para elegir con el teclado</p>
+      </div>
+    </div>
+
+    <!-- Pausa -->
+    <div id="pause" class="overlay hidden">
+      <div class="panel wide">
+        <h2>Pausa</h2>
+        <div id="pause-summary" class="summary"></div>
+        <div class="row">
+          <button id="btn-quit" class="btn">Abandonar partida</button>
+          <button id="btn-pause-compendium" class="btn">📖 Compendio</button>
+          <button id="btn-pause-options" class="btn">Opciones</button>
+          <button id="btn-resume" class="btn primary">Continuar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fin de partida -->
+    <div id="gameover" class="overlay hidden">
+      <div class="panel">
+        <h2 class="danger">Has caído</h2>
+        <div id="gameover-stats" class="summary"></div>
+        <div class="row">
+          <button id="btn-menu" class="btn">Volver al menú</button>
+          <button id="btn-retry" class="btn primary">Reintentar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
